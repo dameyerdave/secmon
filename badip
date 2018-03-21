@@ -1,1 +1,11 @@
 #!/bin/bash
+
+CAT=$1
+SCORE=$2
+
+while read ip
+do
+	IPI=$(curl -s https://www.badips.com/get/info/${ip})
+	info=$(echo ${IPI} | jq -r "\"\(.ReporterCount.sum)|\(.Score[\"${CAT}\"])|\(.LastReport[\"${CAT}\"])|\(if (.Whois != null) then (.Whois.descr|join(\",\")) else null end)|\(.Whois.country)|\(.rDNS)|\(.suc)\"")
+	printf "%s|%s\n" "${ip}" "${info}"
+done < <(curl -s https://www.badips.com/get/list/${CAT}/${SCORE})

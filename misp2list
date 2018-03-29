@@ -1,0 +1,53 @@
+#!/bin/bash
+
+# Observable | Category | Feed-Source(s) | Score | Identification | Url | Typ | Information
+
+# Config
+MISP_TOKEN="w1KV8vumXow2C0u8zquWt0k3pUsObXJEDjQaTafT"
+MISP_SERVER="http://127.0.0.1:8008"
+OUPUT_SEP="|"
+
+# Parameters
+TIME_FRAME="$1"
+
+declare -a events
+
+function to_list() {
+	attrs="$1"
+	echo "$attrs" | jq -r ".response.Attribute | .[] | .value + \"${OUPUT_SEP}\" + .category + \"${OUPUT_SEP}tA TIF${OUPUT_SEP}0${OUPUT_SEP}\" + .comment + \"${OUPUT_SEP}\" + \"${MISP_SERVER}/events/view/\" + .event_id + \"${OUPUT_SEP}\" + .type + \"${OUPUT_SEP}\" + .comment + \"${OUPUT_SEP}\" + (.timestamp | strptime(\"%s\") | strftime(\"%Y-%m-%d %H:%M:%S\"))"
+}
+
+function get_event_ids() {
+	attrs="$1"
+	echo "$attrs" | jq -r '.response.Attribute | .[] | .event_id' | sort -n | uniq
+}
+
+function get_event_info() {
+	eventid=$1
+	echo "${events[$eventid]}" | jq -r '.Event.info'
+}
+
+function get_event_feeds() {
+	eventid=$1
+	echo "${events[$eventid]}" | jq -r '.Event.Feed | .[] | .name' | paste -sd "," -
+}
+
+function query() {
+	WHAT="$1"
+	attrs=$(curl -s -X GET -H "Authorization: ${MISP_TOKEN}" -H "Accept: application/json" ${MISP_SERVER}/attributes/restSearch/json/false/${WHAT}/false/false/false/false/false/${TIME_FRAME}) 
+	for eventid in $(get_event_ids $attrs)
+	do
+		EVENT=$(curl -s -X GET -H "Authorization: ${MISP_TOKEN}" -H "Accept: application/json" ${MISP_SERVER}/events/${eventid})
+		events[$eventid]=$EVENT
+		get_event_info $eventid
+		get_event_feeds $eventid
+	done
+	for attr in $(to_list $attrs)
+	do
+		evid=$(echo $attr | cur -d "${OUPUT_SEP}" -f 7)
+		attr+="${OUPUT_SEP}|$(get_event_info $evid)"	
+		echo "$attr"
+	done
+}
+
+query domain

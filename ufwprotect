@@ -1,0 +1,25 @@
+#!/bin/bash
+
+protect_ssh() {
+	while read ip
+	do
+		ufw insert 1 deny from $ip to any port 22 
+	done < <(curl -s https://www.badips.com/get/list/ssh/5)
+}
+
+protect_apache() {
+	while read ip
+	do
+		ufw insert 1 deny from $ip to any port 80
+		ufw insert 1 deny from $ip to any port 443
+	done < <(curl -s https://www.badips.com/get/list/apache/3)
+}
+
+case $1 in
+'ssh')
+	protect_ssh
+	;;
+'apache')
+	protect_apache
+	;;
+esac

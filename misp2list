@@ -15,7 +15,7 @@ declare -a events
 
 function to_list() {
 	attrs="$1"
-	echo "$attrs" | jq -r ".response.Attribute | .[] | .value + \"${OUPUT_SEP}\" + .category + \"${OUPUT_SEP}tA TIF${OUPUT_SEP}0${OUPUT_SEP}\" + .comment + \"${OUPUT_SEP}\" + .event_id + \"${OUPUT_SEP}\" + \"${MISP_SERVER}/events/view/\" + .event_id + \"${OUPUT_SEP}\" + .type + \"${OUPUT_SEP}\" + .comment + \"${OUPUT_SEP}\" + (.timestamp | strptime(\"%s\") | strftime(\"%Y-%m-%d %H:%M:%S\"))"
+	echo "$attrs" | jq -r ".response.Attribute | .[] | .value + \"${OUPUT_SEP}\" + .category + \"${OUPUT_SEP}0${OUPUT_SEP}\" + .comment + \"${OUPUT_SEP}\" + .event_id + \"${OUPUT_SEP}\" + \"${MISP_SERVER}/events/view/\" + .event_id + \"${OUPUT_SEP}\" + .type + \"${OUPUT_SEP}\" + (.timestamp | strptime(\"%s\") | strftime(\"%Y-%m-%d %H:%M:%S\"))"
 }
 
 function get_event_ids() {
@@ -45,10 +45,8 @@ function query() {
 	done
 	while read attr
 	do
-		#echo "$attr"
-		evid=$(echo "$attr" | cut -d "${OUPUT_SEP}" -f 6)
-		#echo $evid
-		attr+="${OUPUT_SEP}$(get_event_info $evid)"	
+		evid=$(echo "$attr" | cut -d "${OUPUT_SEP}" -f 5)
+		attr+="${OUPUT_SEP}$(get_event_feeds $evid)${OUPUT_SEP}$(get_event_info $evid)"	
 		echo "$attr"
 	done< <(to_list "$attrs")
 }

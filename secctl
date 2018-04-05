@@ -1,0 +1,16 @@
+#!/bin/bash
+
+DIR=$(cd $(dirname $0); pwd -P)
+
+case "$1" in
+	'start')
+		sec --conf "'${DIR}/sec.d/*.conf'" \
+			--input /var/log/mail.info \
+			--input /var/log/auth.log \
+			--detach \
+			--debug 4
+		;;
+	*)
+		echo "No action $1"
+		;;
+esac

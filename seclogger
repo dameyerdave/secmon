@@ -1,0 +1,6 @@
+#!/bin/bash
+
+PREFIX="$1"
+MSG="$(cat | tr '\n' ' ')"
+MSG=$(echo "$MSG" | sed -e 's, $,,') 
+echo "$(date +"%a %b %d %H:%M:%S %Y"): $PREFIX ($MSG)" >> $(dirname $0)/sec.log 

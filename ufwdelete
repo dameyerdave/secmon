@@ -1,0 +1,15 @@
+#!/bin/bash
+
+if [ $# -lt 2 ]; then
+	exit 1
+fi
+
+F=$1
+L=$2
+C=$(expr $L - $F)
+
+while [ $C -ge 0 ]
+do
+	ufw --force delete $F
+	C=$(expr $C - 1)
+done

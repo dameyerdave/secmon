@@ -1,0 +1,58 @@
+#!/bin/bash
+
+if [ $# != 3 ]
+then
+    echo "usage: $(basename $0) <src-port> <dst-host> <dst-port> [-h]"
+	echo "  -h: hex output"
+    exit 0
+fi
+
+HEX=0
+if [ "$4" == "-h" ]; then
+	HEX=1
+fi
+
+declare -a children
+
+function cleanup {
+	kill -9 ${children[0]}
+	kill -9 ${children[1]}
+	rm -rf "$TMP"
+}
+#trap cleanup EXIT
+trap cleanup HUP 
+trap cleanup INT
+trap cleanup KILL
+
+function out {
+	while true
+	do
+		if read line; then
+			echo -n "$(date '+%Y-%m-%d-%H:%M:%S') "	
+			HEX=$(printf "%02x%02x%02x")
+			printf "(%02x %02x %02x %02x %02x %02x %02x %02x [%d]) " "'${line:0:1}" "'${line:1:1}" "'${line:2:1}" "'${line:3:1}" "'${line:4:1}" "'${line:5:1}" "'${line:6:1}" "'${line:7:1}" "$((16#${HEX}))" 
+			if [ "$1" == "<=" ]; then
+				echo -e "\033[0;35m${1} ${line}\033[0m"
+			else
+				echo -e "\033[0;36m${1} ${line}\033[0m"
+			fi
+			if [ $HEX -eq 1 ]; then
+				echo "[["
+				echo ${line} | xxd
+				echo "]]"
+			fi
+		fi
+	done <"$2"
+}
+
+TMP=`mktemp -d`
+BACK=$TMP/pipe.back
+SENT=$TMP/pipe.sent
+RCVD=$TMP/pipe.rcvd
+
+mkfifo -m 0600 "$BACK" "$SENT" "$RCVD"
+out "<=" "$RCVD" &
+children[0]=$!
+out "=>" "$SENT" &
+children[1]=$!
+nc -l "$1" <"$BACK" | tee "$SENT" | nc "$2" "$3" | tee "$RCVD" >"$BACK"
